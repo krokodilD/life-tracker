@@ -33,6 +33,7 @@ export default function Home() {
   // User info
   const userDateOfBirth = new Date("1991-03-21");
   const userCurrentAge = differenceInYears(new Date(), userDateOfBirth);
+  const userGoToSchoolYear = 7;
   const userEndOfSchool = new Date("2008-06-01");
   const userEndOfStudies = new Date("2015-03-01");
   const userKids = [
@@ -55,35 +56,38 @@ export default function Home() {
     getColumns: () => settings.yearColumns * settings.monthsInYear,
   };
 
-  const spend: LifeStage = {
+  const lifeStages: LifeStage = {
     childhood: {
       name: "Childhood",
       color: "bg-teal-300",
       from: () => 1,
-      to: () => 72,
+      to: () =>
+        differenceInMonths(
+          addYears(new Date(userDateOfBirth), userGoToSchoolYear),
+          userDateOfBirth
+        ),
     },
     school: {
       name: "School",
       color: "bg-sky-300",
-      from: () => spend.childhood.to() + 1,
-      to: () =>
-        differenceInMonths(userEndOfSchool, userDateOfBirth) -
-        spend.childhood.to(),
+      from: () => lifeStages.childhood.to() + 1,
+      to: () => differenceInMonths(userEndOfSchool, userDateOfBirth),
     },
     studies: {
       name: "Studies",
       color: "bg-amber-300",
-      from: () => spend.school.to() + 1,
+      from: () => lifeStages.school.to() + 1,
       to: () =>
-        spend.school.to() +
+        lifeStages.school.to() +
         differenceInMonths(userEndOfStudies, userEndOfSchool),
     },
     work: {
       name: "Work",
       color: "bg-rose-300",
-      from: () => spend.studies.to() + 1,
+      from: () => lifeStages.studies.to() + 1,
       to: () =>
-        spend.studies.to() + differenceInMonths(new Date(), userEndOfStudies),
+        lifeStages.studies.to() +
+        differenceInMonths(new Date(), userEndOfStudies),
     },
     kids: {
       name: "Time with kids",
@@ -121,7 +125,7 @@ export default function Home() {
   const totalColumnsInRow = settings.getColumns();
 
   const getLifeStageByMonthNumber = (monthNumber: number) => {
-    let targetLifeStage = Object.entries(spend).find(
+    let targetLifeStage = Object.entries(lifeStages).find(
       ([_key, value]) =>
         value.from() <= monthNumber && monthNumber <= value.to()
     );
@@ -138,6 +142,10 @@ export default function Home() {
 
     return (
       <div className="flex flex-col relative mx-[200px]">
+        <div className="text-xs text-indigo-400 text-center mb-1">
+          1 row = 36 months = 3 year
+        </div>
+        <div className="rounded-xl border-t border-indigo-400 h-10 -mb-6"></div>
         {[...Array(totalRows)].map((x, i) => {
           const nextLifeStage = getLifeStageByMonthNumber(
             currentMonthNumber + 1
@@ -151,8 +159,11 @@ export default function Home() {
                   className={`text-xs font-semibold ${currentColor} text-indigo-900 py-1 px-2 rounded-lg bg-opacity-50`}
                 >
                   {nextLifeStage.name}
+                  <span className="ml-1 font-normal">
+                    ({nextLifeStage.to() - nextLifeStage.from()})
+                  </span>
                 </div>
-                <div className="w-8 ml-1">→</div>
+                <div className="w-8 ml-1 text-indigo-600 mt-[-2px]">→</div>
               </div>
             );
           }
@@ -166,12 +177,12 @@ export default function Home() {
                   <div
                     key={`month-${currentMonthNumber}`}
                     className={`
-                p-1 border border-indigo-400 w-6 h-6 rounded-[40%] 
-                month-${currentMonthNumber}
-                ${i2 === 11 && "mr-3"}
-                ${i2 === 23 && "mr-3"}
-                ${getLifeStageByMonthNumber(currentMonthNumber)?.color}
-              `}
+                      p-1 border border-indigo-400 w-6 h-6 rounded-[40%] 
+                      month-${currentMonthNumber}
+                      ${i2 === 11 && "mr-3"}
+                      ${i2 === 23 && "mr-3"}
+                      ${getLifeStageByMonthNumber(currentMonthNumber)?.color}
+                    `}
                   ></div>
                 );
               })}
