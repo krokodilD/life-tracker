@@ -1,113 +1,202 @@
-import Image from "next/image";
+"use client";
+
+import { differenceInYears, differenceInMonths, addYears } from "date-fns";
+import { FC } from "react";
+
+/**
+ * COLORS:
+ *
+ * amber
+ * lime
+ * teal
+ * sky
+ * violet
+ * rose
+ */
+
+type LifeStageItem = {
+  name: string;
+  color: string;
+  from: () => number;
+  to: () => number;
+  kids?: {
+    name: string;
+    from?: () => number;
+    to?: () => number;
+  }[];
+};
+type LifeStage = {
+  [key: string]: LifeStageItem;
+};
 
 export default function Home() {
+  // User info
+  const userDateOfBirth = new Date("1991-03-21");
+  const userCurrentAge = differenceInYears(new Date(), userDateOfBirth);
+  const userEndOfSchool = new Date("2008-06-01");
+  const userEndOfStudies = new Date("2015-03-01");
+  const userKids = [
+    {
+      name: "Emily",
+      dateOfBirth: new Date("2020-07-01"),
+    },
+    {
+      name: "Melania",
+      dateOfBirth: new Date("2022-05-20"),
+    },
+  ];
+
+  const settings = {
+    monthsInYear: 12,
+    targetYO: 70,
+    yearColumns: 3,
+
+    getRows: () => Math.round(settings.targetYO / settings.yearColumns),
+    getColumns: () => settings.yearColumns * settings.monthsInYear,
+  };
+
+  const spend: LifeStage = {
+    childhood: {
+      name: "Childhood",
+      color: "bg-teal-300",
+      from: () => 1,
+      to: () => 72,
+    },
+    school: {
+      name: "School",
+      color: "bg-sky-300",
+      from: () => spend.childhood.to() + 1,
+      to: () =>
+        differenceInMonths(userEndOfSchool, userDateOfBirth) -
+        spend.childhood.to(),
+    },
+    studies: {
+      name: "Studies",
+      color: "bg-amber-300",
+      from: () => spend.school.to() + 1,
+      to: () =>
+        spend.school.to() +
+        differenceInMonths(userEndOfStudies, userEndOfSchool),
+    },
+    work: {
+      name: "Work",
+      color: "bg-rose-300",
+      from: () => spend.studies.to() + 1,
+      to: () =>
+        spend.studies.to() + differenceInMonths(new Date(), userEndOfStudies),
+    },
+    kids: {
+      name: "Time with kids",
+      color: "bg-lime-300",
+      from: () => 0,
+      to: () => 0,
+      kids: [
+        {
+          name: "Emily",
+          from: () =>
+            differenceInMonths(userKids[0].dateOfBirth, userDateOfBirth),
+          to: () =>
+            differenceInMonths(userKids[0].dateOfBirth, userDateOfBirth) +
+            differenceInMonths(
+              addYears(userKids[0].dateOfBirth, 18),
+              userKids[0].dateOfBirth
+            ),
+        },
+        {
+          name: "Melania",
+          from: () =>
+            differenceInMonths(userKids[1].dateOfBirth, userDateOfBirth),
+          to: () =>
+            differenceInMonths(userKids[1].dateOfBirth, userDateOfBirth) +
+            differenceInMonths(
+              addYears(userKids[1].dateOfBirth, 18),
+              userKids[1].dateOfBirth
+            ),
+        },
+      ],
+    },
+  };
+
+  const totalRows = settings.getRows();
+  const totalColumnsInRow = settings.getColumns();
+
+  const getLifeStageByMonthNumber = (monthNumber: number) => {
+    let targetLifeStage = Object.entries(spend).find(
+      ([_key, value]) =>
+        value.from() <= monthNumber && monthNumber <= value.to()
+    );
+
+    if (!targetLifeStage) return;
+
+    const lifeStage: LifeStageItem = targetLifeStage[1];
+    return lifeStage;
+  };
+
+  const Grid: FC = () => {
+    let currentMonthNumber = 0;
+    let currentColor: string | null = null;
+
+    return (
+      <div className="flex flex-col relative mx-[200px]">
+        {[...Array(totalRows)].map((x, i) => {
+          const nextLifeStage = getLifeStageByMonthNumber(
+            currentMonthNumber + 1
+          );
+          let rowInfo = null;
+          if (nextLifeStage?.color && nextLifeStage.color !== currentColor) {
+            currentColor = nextLifeStage.color;
+            rowInfo = (
+              <div className="row-info absolute w-[200px] ml-[-200px] left-0 flex justify-end items-center">
+                <div
+                  className={`text-xs font-semibold ${currentColor} text-indigo-900 py-1 px-2 rounded-lg bg-opacity-50`}
+                >
+                  {nextLifeStage.name}
+                </div>
+                <div className="w-8 ml-1">→</div>
+              </div>
+            );
+          }
+
+          return (
+            <div key={i} className="flex flex-row p-1 gap-1">
+              {rowInfo}
+              {[...Array(totalColumnsInRow)].map((x2, i2) => {
+                currentMonthNumber++;
+                return (
+                  <div
+                    key={`month-${currentMonthNumber}`}
+                    className={`
+                p-1 border border-indigo-400 w-6 h-6 rounded-[40%] 
+                month-${currentMonthNumber}
+                ${i2 === 11 && "mr-3"}
+                ${i2 === 23 && "mr-3"}
+                ${getLifeStageByMonthNumber(currentMonthNumber)?.color}
+              `}
+                  ></div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const Header: FC = () => (
+    <header className="mb-10 text-center">
+      <h1 className="text-3xl font-semibold text-indigo-800">
+        A life remaining time in months
+      </h1>
+      <div className="text-sm font-medium text-sky-700">
+        (Average life expectancy of 70 years)
+      </div>
+    </header>
+  );
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+    <main className="flex min-h-screen flex-col items-center justify-between pb-24 pt-10 w-fit">
+      <Header />
+      <Grid />
     </main>
   );
 }
